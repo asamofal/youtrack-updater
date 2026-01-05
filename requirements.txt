@@ -1,4 +1,5 @@
-docker==4.1.0
-requests==2.22.0
-requests-unixsocket==0.1.5
-colorama==0.4.3
+docker>=7.0.0
+requests>=2.31.0
+urllib3<2
+requests-unixsocket>=0.3.0
+colorama>=0.4.6
