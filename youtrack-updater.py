@@ -118,7 +118,7 @@ class YoutrackUpdater:
         self.docker_compose_updater.update_tag(self.latest_tag)
 
         # run container in the background
-        subprocess.run(['docker-compose', 'up', '-d'])
+        subprocess.run(['docker', 'compose', 'up', '-d'])
 
         # set a new docker container
         self.current_container = self.get_current_container(YOUTRACK_CONTAINER_NAME)
