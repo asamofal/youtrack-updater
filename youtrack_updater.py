@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 import requests
 from colorama import Fore as Color, Style, init as colorama_init
@@ -134,7 +135,7 @@ class YoutrackUpdater:
             f.write(content)
         print(f"{Color.GREEN}{self.compose_file} has been updated!")
 
-    def watch_logs(self):
+    def watch_logs(self, timeout=60):
         process = subprocess.Popen(
             ['docker', 'compose', '-f', self.compose_file, 'logs', '-f'],
             stdout=subprocess.PIPE,
@@ -142,7 +143,13 @@ class YoutrackUpdater:
             text=True,
         )
 
+        deadline = time.monotonic() + timeout
         for line in process.stdout:
+            if time.monotonic() > deadline:
+                process.terminate()
+                print(f"{Color.YELLOW}Timed out waiting for wizard_token in logs.")
+                print(f"Run {Color.WHITE}docker compose -f {self.compose_file} logs -f{Color.YELLOW} to check manually.")
+                break
             if 'wizard_token' in line:
                 url = re.findall(r'\[([^;]*)]', line)
                 if url:
