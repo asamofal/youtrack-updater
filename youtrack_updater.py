@@ -11,7 +11,7 @@ import requests
 from colorama import Fore as Color, Style, init as colorama_init
 from packaging.version import Version, InvalidVersion
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 DEFAULT_COMPOSE_FILE = "docker-compose.yml"
 
@@ -166,7 +166,12 @@ def main():
     args = parser.parse_args()
 
     colorama_init(autoreset=True)
-    YoutrackUpdater(args.compose_file)
+
+    try:
+        YoutrackUpdater(args.compose_file)
+    except KeyboardInterrupt:
+        print("\rTerminating...")
+        sys.exit()
 
 
 if __name__ == '__main__':
