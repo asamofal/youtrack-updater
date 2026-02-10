@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 import time
+from datetime import datetime
 
 import requests
 from colorama import Fore as Color, Style, init as colorama_init
@@ -16,6 +17,11 @@ __version__ = "1.0.1"
 DEFAULT_COMPOSE_FILE = "docker-compose.yml"
 
 
+def log(emoji, message, color=Color.GREEN):
+    timestamp = datetime.now().strftime("%H:%M")
+    print(f"{emoji} {Color.WHITE}[{timestamp}]{color} {message}")
+
+
 class YoutrackUpdater:
     YOUTRACK_TAGS_URL = "https://hub.docker.com/v2/repositories/jetbrains/youtrack/tags"
     IMAGE_PATTERN = r'jetbrains/youtrack:([\w.]+)'
@@ -24,24 +30,22 @@ class YoutrackUpdater:
         self.compose_file = compose_file
 
         if not os.path.isfile(self.compose_file):
-            print(f"{Color.RED}Compose file not found: {self.compose_file}")
+            log("❌", f"Compose file not found: {self.compose_file}", Color.RED)
             sys.exit(1)
 
         try:
             self.current_tag = self.get_current_tag()
-            current_tag_colored = f"{Color.WHITE}{Style.BRIGHT}{self.current_tag}"
-            print(f"{Color.BLUE}{Style.BRIGHT}Current running Youtrack version: {current_tag_colored}")
+            log("📦 ", f"Current version: {Color.WHITE}{Style.BRIGHT}{self.current_tag}", Color.BLUE)
 
             self.latest_tag = self.get_latest_tag()
-            latest_tag_colored = f"{Color.GREEN}{Style.BRIGHT}{self.latest_tag}"
-            print(f"{Color.BLUE}{Style.BRIGHT}The latest available Youtrack version: {latest_tag_colored}")
+            log("🌐", f"Latest version: {Color.GREEN}{Style.BRIGHT}{self.latest_tag}", Color.BLUE)
 
             self.check_for_updates()
         except requests.RequestException as e:
-            print(f"{Color.RED}Failed to check Docker Hub: {e}")
+            log("❌", f"Failed to check Docker Hub: {e}", Color.RED)
             sys.exit(1)
         except ValueError as e:
-            print(f"{Color.RED}{e}")
+            log("❌", str(e), Color.RED)
             sys.exit(1)
 
     def get_current_tag(self):
@@ -74,13 +78,13 @@ class YoutrackUpdater:
     def check_for_updates(self):
         print()
         if Version(self.latest_tag) <= Version(self.current_tag):
-            print(f"{Color.GREEN}{Style.BRIGHT}Current Youtrack version is up to date! Nothing to update :)")
+            log("✅", "Already up to date")
             return
 
-        print(f"{Color.GREEN}{Style.BRIGHT}Update is available!")
+        log("🆕", "Update available!")
         if not self.confirm(f"{Style.BRIGHT}Update Youtrack [y/n]?"):
             print()
-            print("Okay, not now...")
+            log("👋", "Okay, not now")
             sys.exit(0)
 
         self.update()
@@ -96,21 +100,24 @@ class YoutrackUpdater:
         result = subprocess.run(
             ['docker', 'compose', '-f', self.compose_file, *args],
             check=True,
+            capture_output=True,
         )
         return result
 
     def update(self):
         print()
-        print("Updating is starting...")
+        log("🚀", "Starting update...")
+        print()
 
         subprocess.run(
             ['docker', 'pull', f'jetbrains/youtrack:{self.latest_tag}'],
             check=True,
         )
-        print(f"{Color.GREEN}New image pulled!")
+        print()
+        log("✅", "New image pulled")
 
         self.compose_run('down')
-        print(f"{Color.GREEN}Current Youtrack container has been stopped and removed!")
+        log("✅", "Container stopped and removed")
 
         self.update_compose_tag(self.latest_tag)
 
@@ -121,9 +128,9 @@ class YoutrackUpdater:
         old_image = f"jetbrains/youtrack:{self.current_tag}"
         result = subprocess.run(['docker', 'rmi', old_image], capture_output=True)
         if result.returncode == 0:
-            print(f"{Color.GREEN}Previous Youtrack image {Color.YELLOW}({old_image}) {Color.GREEN}has been removed!")
+            log("🧹", f"Old image removed ({Color.YELLOW}{old_image}{Color.GREEN})")
         else:
-            print(f"{Color.YELLOW}Could not remove previous image {old_image}. You may want to remove it manually.")
+            log("⚠️", f"Could not remove old image. Run manually: {Color.WHITE}docker rmi {old_image}", Color.YELLOW)
 
     def update_compose_tag(self, new_tag):
         with open(self.compose_file) as f:
@@ -133,7 +140,7 @@ class YoutrackUpdater:
 
         with open(self.compose_file, 'w') as f:
             f.write(content)
-        print(f"{Color.GREEN}{self.compose_file} has been updated!")
+        log("✅", f"{self.compose_file} updated")
 
     def watch_logs(self, timeout=60):
         process = subprocess.Popen(
@@ -147,13 +154,13 @@ class YoutrackUpdater:
         for line in process.stdout:
             if time.monotonic() > deadline:
                 process.terminate()
-                print(f"{Color.YELLOW}Timed out waiting for wizard_token in logs.")
-                print(f"Run {Color.WHITE}docker compose -f {self.compose_file} logs -f{Color.YELLOW} to check manually.")
+                log("❌", "Timed out waiting for Configuration Wizard URL", Color.YELLOW)
+                log("⚠️", f"Run: {Color.WHITE}docker compose -f {self.compose_file} logs -f", Color.YELLOW)
                 break
             if 'wizard_token' in line:
                 url = re.findall(r'\[([^;]*)]', line)
                 if url:
-                    print(f"{Color.GREEN}To continue open Youtrack Configuration Wizard by URL: {Color.YELLOW}{url[0]}")
+                    log("🔗", f"Configuration Wizard: {Color.YELLOW}{url[0]}")
                 process.terminate()
                 break
 
@@ -170,7 +177,8 @@ def main():
     try:
         YoutrackUpdater(args.compose_file)
     except KeyboardInterrupt:
-        print("\rTerminating...")
+        print("\r\033[K")
+        log("👋", "Terminating...")
         sys.exit()
 
 
