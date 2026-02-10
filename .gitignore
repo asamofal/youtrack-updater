@@ -1,6 +1,7 @@
-/*
-
-!.gitignore
-!youtrack-updater.py
-!requirements.txt
-!CLAUDE.md
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.idea/

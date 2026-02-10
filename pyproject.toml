@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "youtrack-updater"
+version = "1.0.0"
+description = "Auto-update JetBrains YouTrack Docker containers"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{ name = "Anton Samofal", email = "anton.smfl@gmail.com" }]
+keywords = ["youtrack", "docker", "jetbrains", "automation", "devops"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = [
+    "requests>=2.32.0",
+    "colorama>=0.4.6",
+    "packaging>=24.0",
+]
+
+[project.scripts]
+youtrack-updater = "youtrack_updater:main"
+
+[project.urls]
+Repository = "https://github.com/asamofal/youtrack-updater"
