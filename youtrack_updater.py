@@ -7,12 +7,13 @@ import subprocess
 import sys
 import time
 from datetime import datetime
+from importlib.metadata import version
 
 import requests
 from colorama import Fore as Color, Style, init as colorama_init
 from packaging.version import Version, InvalidVersion
 
-__version__ = "1.0.1"
+__version__ = version("youtrack-updater")
 
 DEFAULT_COMPOSE_FILE = "docker-compose.yml"
 
