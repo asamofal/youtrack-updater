@@ -51,9 +51,13 @@ class YoutrackUpdater:
             return match.group(1)
 
     def get_latest_tag(self):
-        response = requests.get(self.YOUTRACK_TAGS_URL, params={"page_size": 100}).json()
+        response = requests.get(self.YOUTRACK_TAGS_URL, params={"page_size": 100})
+        response.raise_for_status()
+
+        data = response.json()
+
         highest = None
-        for result in response['results']:
+        for result in data['results']:
             try:
                 v = Version(result['name'])
             except InvalidVersion:
