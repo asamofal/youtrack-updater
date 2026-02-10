@@ -19,8 +19,7 @@ DEFAULT_COMPOSE_FILE = "docker-compose.yml"
 
 
 def log(emoji, message, color=Color.GREEN):
-    timestamp = datetime.now().strftime("%H:%M")
-    print(f"{emoji} {Color.WHITE}[{timestamp}]{color} {message}")
+    print(f"{emoji} {color}{message}")
 
 
 class YoutrackUpdater:
