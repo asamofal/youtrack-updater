@@ -117,9 +117,12 @@ class YoutrackUpdater:
 
         self.watch_logs()
 
-        subprocess.run(['docker', 'rmi', f'jetbrains/youtrack:{self.current_tag}'])
-        print(f"{Color.GREEN}Previous Youtrack image {Color.YELLOW}(jetbrains/youtrack:{self.current_tag}) "
-              f"{Color.GREEN}has been removed!")
+        old_image = f"jetbrains/youtrack:{self.current_tag}"
+        result = subprocess.run(['docker', 'rmi', old_image], capture_output=True)
+        if result.returncode == 0:
+            print(f"{Color.GREEN}Previous Youtrack image {Color.YELLOW}({old_image}) {Color.GREEN}has been removed!")
+        else:
+            print(f"{Color.YELLOW}Could not remove previous image {old_image}. You may want to remove it manually.")
 
     def update_compose_tag(self, new_tag):
         with open(self.compose_file) as f:
