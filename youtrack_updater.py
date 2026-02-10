@@ -35,7 +35,7 @@ class YoutrackUpdater:
 
         try:
             self.current_tag = self.get_current_tag()
-            log("📦 ", f"Current version: {Color.WHITE}{Style.BRIGHT}{self.current_tag}", Color.BLUE)
+            log("📦", f"Current version: {Color.WHITE}{Style.BRIGHT}{self.current_tag}", Color.BLUE)
 
             self.latest_tag = self.get_latest_tag()
             log("🌐", f"Latest version: {Color.GREEN}{Style.BRIGHT}{self.latest_tag}", Color.BLUE)
