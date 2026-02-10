@@ -1,47 +1,57 @@
 # YouTrack Docker Updater
 
-A small helper script to check for new JetBrains YouTrack Docker image versions and automatically update a running YouTrack instance managed via Docker Compose.
+A CLI tool that checks for new JetBrains YouTrack Docker image versions and automatically updates a running instance managed via Docker Compose.
 
-The script:
-- Detects the currently running YouTrack version
+The tool:
+- Reads the current YouTrack version from `docker-compose.yml`
 - Compares it with the latest available Docker image tag
-- Updates `docker-compose.yml`
-- Restarts the container using modern `docker compose`
+- Pre-pulls the new image to minimize downtime
+- Updates `docker-compose.yml` and restarts the service
 
 ---
 
-## Getting started
-
-### Requirements
+## Requirements
 
 - Linux host with Docker installed
 - Docker Compose v2 (`docker compose`)
 - Python 3.10+
-- A running YouTrack container named `youtrack`
+- A `docker-compose.yml` with a `jetbrains/youtrack:<tag>` image
 
-### Setup
+## Installation
 
-Create a virtual environment and install dependencies:
+### With pipx (recommended)
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+pipx install youtrack-updater
 ```
 
-Make the script executable:
+### With pip
+
 ```bash
-chmod +x youtrack-updater.py
+pip install youtrack-updater
 ```
 
-Ensure the script uses the virtual environment Python in its shebang:
+## Usage
+
 ```bash
-#!/path/to/repo/.venv/bin/python3
+youtrack-updater
 ```
 
-### Usage
+If a newer YouTrack version is available, you'll be prompted to confirm the update.
+
+### Options
+
+```
+--compose-file PATH     Path to docker-compose.yml (default: docker-compose.yml)
+--version               Show version and exit
+```
+
+### Examples
+
 ```bash
-./youtrack-updater.py
-```
+# default — looks for ./docker-compose.yml
+youtrack-updater
 
-If a newer YouTrack version is available, you’ll be prompted to confirm the update.
-If the instance is already up to date, no changes are made.
+# custom compose file location
+youtrack-updater --compose-file /opt/youtrack/docker-compose.yml
+```
