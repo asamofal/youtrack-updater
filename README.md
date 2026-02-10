@@ -31,6 +31,12 @@ pipx install youtrack-updater
 pip install youtrack-updater
 ```
 
+## Upgrade
+
+```bash
+pipx upgrade youtrack-updater
+```
+
 ## Usage
 
 ```bash
