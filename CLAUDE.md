@@ -35,15 +35,26 @@ youtrack-updater --compose-file /path/to/docker-compose.yml
 - **Build backend:** hatchling
 - **Entry point:** `youtrack_updater:main` → `youtrack-updater` CLI command
 - **Dependencies defined in:** `pyproject.toml`
-- **Version:** kept in both `pyproject.toml` and `__version__` in `youtrack_updater.py`
+- **Version:** single source in `pyproject.toml`, read at runtime via `importlib.metadata`
 
 ## Key Dependencies
 
 - `requests` — Docker Hub API calls
 - `colorama` — colored terminal output
+- `packaging` — version comparison
+
+## Testing
+
+```bash
+pip install -e ".[dev]"
+pytest -v
+```
+
+- Tests live in `tests/test_youtrack_updater.py`
+- All external calls (Docker Hub API, subprocess, filesystem) are mocked
+- Run with `-s` to see printed output: `pytest -v -s`
 
 ## Conventions
 
 - Python 3.10+
-- No test suite exists
 - CLI args via `argparse`: `--compose-file`, `--version`
