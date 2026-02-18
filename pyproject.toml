@@ -24,6 +24,9 @@ dependencies = [
     "packaging>=24.0",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
 [project.scripts]
 youtrack-updater = "youtrack_updater:main"
 
