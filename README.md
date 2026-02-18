@@ -61,3 +61,16 @@ youtrack-updater
 # custom compose file location
 youtrack-updater --compose-file /opt/youtrack/docker-compose.yml
 ```
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+pytest -v
+```
+
+Run a specific test:
+
+```bash
+pytest -v -s -k "test_update_sequence"
+```

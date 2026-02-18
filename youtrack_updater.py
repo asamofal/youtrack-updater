@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 import argparse
+import itertools
 import os
 import re
 import subprocess
 import sys
+import threading
 import time
-from datetime import datetime
 from importlib.metadata import version
 
 import requests
@@ -20,6 +21,42 @@ DEFAULT_COMPOSE_FILE = "docker-compose.yml"
 
 def log(emoji, message, color=Color.GREEN):
     print(f"{emoji} {color}{message}")
+
+
+SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
+
+def start_spinner(message, stop_event):
+    def spin():
+        for frame in itertools.cycle(SPINNER_FRAMES):
+            if stop_event.is_set():
+                break
+            print(f"\r{frame} {Color.GREEN}{message}", end="", flush=True)
+            time.sleep(0.1)
+
+    spinner_thread = threading.Thread(target=spin)
+    spinner_thread.start()
+    return spinner_thread
+
+
+def stop_spinner(spinner_thread, stop_event):
+    stop_event.set()
+    spinner_thread.join()
+
+
+def run_with_spinner(loading_msg, done_msg, fail_msg, fn):
+    stop_event = threading.Event()
+    spinner_thread = start_spinner(loading_msg, stop_event)
+    try:
+        result = fn()
+    except Exception:
+        stop_spinner(spinner_thread, stop_event)
+        print(f"\r❌ {Color.RED}{fail_msg}\033[K")
+        raise
+
+    stop_spinner(spinner_thread, stop_event)
+    print(f"\r✅ {Color.GREEN}{done_msg}\033[K")
+    return result
 
 
 class YoutrackUpdater:
@@ -81,7 +118,7 @@ class YoutrackUpdater:
             log("✅", "Already up to date")
             return
 
-        log("🆕", "Update available!")
+        log("→", "Update available!")
         if not self.confirm(f"{Style.BRIGHT}Update Youtrack [y/n]?"):
             print()
             log("👋", "Okay, not now")
@@ -116,12 +153,27 @@ class YoutrackUpdater:
         print()
         log("✅", "New image pulled")
 
-        self.compose_run('down')
-        log("✅", "Container stopped and removed")
+        run_with_spinner(
+            "Stopping container...",
+            "Container stopped and removed",
+            "Failed to stop container",
+            lambda: self.compose_run('down'),
+        )
 
-        self.update_compose_tag(self.latest_tag)
+        run_with_spinner(
+            "Updating compose file...",
+            f"{self.compose_file} updated",
+            f"Failed to update {self.compose_file}",
+            lambda: self.update_compose_tag(self.latest_tag),
+        )
+        print()
 
-        self.compose_run('up', '-d')
+        run_with_spinner(
+            "Starting container...",
+            "Container started",
+            "Failed to start container",
+            lambda: self.compose_run('up', '-d'),
+        )
 
         self.watch_logs()
 
@@ -140,9 +192,11 @@ class YoutrackUpdater:
 
         with open(self.compose_file, 'w') as f:
             f.write(content)
-        log("✅", f"{self.compose_file} updated")
 
     def watch_logs(self, timeout=60):
+        stop_event = threading.Event()
+        spinner_thread = start_spinner("Waiting for Configuration Wizard URL...", stop_event)
+
         process = subprocess.Popen(
             ['docker', 'compose', '-f', self.compose_file, 'logs', '-f'],
             stdout=subprocess.PIPE,
@@ -150,19 +204,25 @@ class YoutrackUpdater:
             text=True,
         )
 
+        is_found = False
         deadline = time.monotonic() + timeout
         for line in process.stdout:
             if time.monotonic() > deadline:
-                process.terminate()
-                log("❌", "Timed out waiting for Configuration Wizard URL", Color.YELLOW)
-                log("⚠️", f"Run: {Color.WHITE}docker compose -f {self.compose_file} logs -f", Color.YELLOW)
                 break
             if 'wizard_token' in line:
                 url = re.findall(r'\[([^;]*)]', line)
                 if url:
-                    log("🔗", f"Configuration Wizard: {Color.YELLOW}{url[0]}")
-                process.terminate()
+                    is_found = True
+                    stop_spinner(spinner_thread, stop_event)
+                    print(f"\r🔗 {Color.GREEN}Configuration Wizard: {Color.YELLOW}{url[0]}\033[K")
+                    print()
                 break
+
+        process.terminate()
+        if not is_found:
+            stop_spinner(spinner_thread, stop_event)
+            print(f"\r❌ {Color.YELLOW}Timed out waiting for Configuration Wizard URL\033[K")
+            log("⚠️", f"Run: {Color.WHITE}docker compose -f {self.compose_file} logs -f", Color.YELLOW)
 
 
 def main():
